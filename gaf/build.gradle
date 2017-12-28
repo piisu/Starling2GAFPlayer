@@ -1,0 +1,122 @@
+apply plugin: 'gradlefx'
+apply plugin: 'scaffold'
+apply plugin: 'idea'
+apply plugin: 'maven'
+
+def settingsXml = new XmlParser().parse(new File(System.getProperty("user.home") , ".m2/settings.xml"))
+def backlog = settingsXml.servers.server.find({it.id.text()=="funyamora.backlog"})
+def backlogRepo = "https://funyamora.backlog.jp/dav/MVN_REPOS"
+def backlogUser = backlog.username.text()
+def backlogPass = backlog.password.text()
+
+//flexHome = "<Your Flex SDK HOME>"
+
+group = 'com.catalystapps.gaf'
+version = '2.0.0'
+type = 'swcAir'
+additionalCompilerOptions = [
+    "-show-actionscript-warnings=false",
+    '-load-config',
+    "${flexHome}/frameworks/air-config.xml"
+]
+
+configurations {
+    deployerJars
+}
+
+buildscript {
+    def _settingsXml = new XmlParser().parse(new File(System.getProperty("user.home") , ".m2/settings.xml"))
+    def _backlog = _settingsXml.servers.server.find({it.id.text()=="funyamora.backlog"})
+    def _backlogRepo = "https://funyamora.backlog.jp/dav/MVN_REPOS"
+    def _backlogUser = _backlog.username.text()
+    def _backlogPass = _backlog.password.text()
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url 'http://dl.bintray.com/cjstehno/public'
+        }
+        maven {
+            name 'piisu-repos'
+            url _backlogRepo
+            credentials {
+                username _backlogUser
+                password _backlogPass
+            }
+        }
+    }
+    dependencies {
+        classpath group: 'org.gradlefx', name: 'gradlefx', version: '1.4.0'
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        credentials {
+            username backlogUser
+            password backlogPass
+        }
+        name 'piisu-repos'
+        url backlogRepo
+    }
+}
+
+afterEvaluate {
+    dependencies {
+        external files("${flexHome}/frameworks/libs/air/airglobal.swc")
+        external files("${flexHome}/frameworks/libs/air/aircore.swc")
+    }
+}
+
+
+dependencies {
+    file("libs").list().each {
+        if (it.endsWith(".swc")) {
+            external files("libs/${it}")
+        }
+    }
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        configuration = configurations.deployerJars
+        repository(url: "dav:${backlogRepo}") {
+            authentication(userName: backlogUser, password: backlogPass)
+        }
+        //pom.dependencies = new ArrayList(dependencies.configurationContainer["external"].dependencies)
+    }
+}
+
+
+task intellij(type:IntelliJTask)
+class IntelliJTask extends org.gradlefx.ide.tasks.idea.IdeaProject {
+
+    def IntelliJTask() {
+        dependsOn("idea")
+        dependsOn.remove("scaffold")//disable scaffold
+    }
+
+    def addDependencies() {
+        editXmlFile project.name + ".iml", { xml ->
+            def entries = xml.component.find { it.'@name' == 'FlexBuildConfigurationManager' }
+                    .configurations.configuration.dependencies.entries.first()
+            def rootMgr = xml.component.find { it.'@name' == 'NewModuleRootManager' }
+
+            eachDependencyFile { file, type ->
+                println file
+                def String uuid = file.name
+                def entry = new Node(entries, 'entry', ['library-id': uuid])
+                new Node(entry, 'dependency', ['linkage': configTypeToLinkageType(type)])
+
+                def orderEntry = new Node(rootMgr, 'orderEntry', [type: "module-library"]);
+                def libNode = new Node(orderEntry, 'library', [name: file.name, type: "flex"])
+                new Node(libNode, 'properties', [id: uuid])
+                def classes = new Node(libNode, 'CLASSES')
+                new Node(classes, 'root', [url: "jar://\$MODULE_DIR\$/${org.apache.commons.io.FilenameUtils.separatorsToUnix(project.relativePath(file))}!/"]);
+                new Node(libNode, 'JAVADOC');
+                new Node(libNode, 'SOURCES');
+            }
+        }
+    }
+}
