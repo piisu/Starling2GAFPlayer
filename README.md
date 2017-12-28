@@ -61,8 +61,8 @@ Requirements of Starling GAF Library:
 
 * In order to compile Flash/AIR application you have to use AIR SDK 15 and higher;
 * In order to run an application you need Flash Player/AIR Runtime 15.0.0 and higher;
-* [Starling][14] 1.6 and higher;
-* [Feathers][15] 2.0.1 and higher (used to display Text Fields)
+* [Starling][14] 2.0 and higher;
+* [Feathers][15] 3.0.0 and higher (used to display Text Fields)
 
 Links and resources:
 -----------------
