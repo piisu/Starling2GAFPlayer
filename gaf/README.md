@@ -4,7 +4,7 @@ open "build.gradle" and edit flexHome variable.
 //flexHome = "<Your Flex SDK HOME>"
 ```
 
-# Build
+# How to Build
 Execute the following command to generate "build/gaf.swc"
 
 ```
