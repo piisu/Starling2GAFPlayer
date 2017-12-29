@@ -3,19 +3,12 @@ apply plugin: 'scaffold'
 apply plugin: 'idea'
 apply plugin: 'maven'
 
-def settingsXml = new XmlParser().parse(new File(System.getProperty("user.home") , ".m2/settings.xml"))
-def backlog = settingsXml.servers.server.find({it.id.text()=="funyamora.backlog"})
-def backlogRepo = "https://funyamora.backlog.jp/dav/MVN_REPOS"
-def backlogUser = backlog.username.text()
-def backlogPass = backlog.password.text()
-
 //flexHome = "<Your Flex SDK HOME>"
 
 group = 'com.catalystapps.gaf'
 version = '2.0.0'
 type = 'swcAir'
 additionalCompilerOptions = [
-    "-show-actionscript-warnings=false",
     '-load-config',
     "${flexHome}/frameworks/air-config.xml"
 ]
@@ -25,41 +18,20 @@ configurations {
 }
 
 buildscript {
-    def _settingsXml = new XmlParser().parse(new File(System.getProperty("user.home") , ".m2/settings.xml"))
-    def _backlog = _settingsXml.servers.server.find({it.id.text()=="funyamora.backlog"})
-    def _backlogRepo = "https://funyamora.backlog.jp/dav/MVN_REPOS"
-    def _backlogUser = _backlog.username.text()
-    def _backlogPass = _backlog.password.text()
     repositories {
         mavenLocal()
         mavenCentral()
         maven {
             url 'http://dl.bintray.com/cjstehno/public'
         }
-        maven {
-            name 'piisu-repos'
-            url _backlogRepo
-            credentials {
-                username _backlogUser
-                password _backlogPass
-            }
-        }
     }
     dependencies {
-        classpath group: 'org.gradlefx', name: 'gradlefx', version: '1.4.0'
+        classpath group: 'org.gradlefx', name: 'gradlefx', version: '1.5.0'
     }
 }
 
 repositories {
     mavenCentral()
-    maven {
-        credentials {
-            username backlogUser
-            password backlogPass
-        }
-        name 'piisu-repos'
-        url backlogRepo
-    }
 }
 
 afterEvaluate {
@@ -77,17 +49,6 @@ dependencies {
         }
     }
 }
-
-uploadArchives {
-    repositories.mavenDeployer {
-        configuration = configurations.deployerJars
-        repository(url: "dav:${backlogRepo}") {
-            authentication(userName: backlogUser, password: backlogPass)
-        }
-        //pom.dependencies = new ArrayList(dependencies.configurationContainer["external"].dependencies)
-    }
-}
-
 
 task intellij(type:IntelliJTask)
 class IntelliJTask extends org.gradlefx.ide.tasks.idea.IdeaProject {
